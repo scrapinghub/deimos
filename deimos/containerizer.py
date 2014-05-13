@@ -87,7 +87,7 @@ class Docker(Containerizer, _Struct):
         state.push()
         state.ids()
         url, options = self.container_settings.override(*container(task))
-        pre, image = url.split("docker:///")
+        pre, image = re.split(r"^docker:///?", url)
         if pre != "":
             raise Err("URL '%s' is not a valid docker:// URL!" % url)
         if image == "":
