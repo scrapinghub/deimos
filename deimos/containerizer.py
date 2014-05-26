@@ -180,15 +180,20 @@ class Docker(Containerizer, _Struct):
                                                           close_fds=True)
         data = Run(data=True)(deimos.docker.wait(state.cid()))
         state.exit(data)
-        lk_w.unlock()
         for p, arr in [(self.runner, runner_argv), (observer, observer_argv)]:
             if p is None:
                 continue
+            if p.poll() is None:
+                p.terminate()
+                time.sleep(0.01)
+            if p.poll() is None:
+                p.kill()
             msg = deimos.cmd.present(arr, p.wait())
             if p.wait() == 0:
                 log.info(msg)
             else:
                 log.warning(msg)
+        lk_w.unlock()
         return state.exit()
     def update(self, *args):
         log.info(" ".join(args))
