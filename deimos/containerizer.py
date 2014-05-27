@@ -184,9 +184,11 @@ class Docker(Containerizer, _Struct):
             if p is None:
                 continue
             if p.poll() is None:
+                log.warning(deimos.cmd.present(arr, "Overdue -> SIGTERM"))
                 p.terminate()
                 time.sleep(0.01)
             if p.poll() is None:
+                log.warning(deimos.cmd.present(arr, "Overdue -> SIGKILL"))
                 p.kill()
             msg = deimos.cmd.present(arr, p.wait())
             if p.wait() == 0:
