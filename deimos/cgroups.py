@@ -1,4 +1,5 @@
 import logging
+import os
 
 from deimos.logger import log
 from deimos._struct import _Struct
@@ -56,12 +57,13 @@ class CPU(CGroup):
         # up in CGroups is 1024.
 
 class CPUAcct(CGroup):
+    ticks = os.sysconf("SC_CLK_TCK")
     def user_time(self):
         "Total user time for container in seconds."
-        return float(self.stat_data().user) / 100
+        return float(self.stat_data().user) / self.ticks
     def system_time(self):
         "Total system time for container in seconds."
-        return float(self.stat_data().system) / 100
+        return float(self.stat_data().system) / self.ticks
 
 class StatFile(_Struct):
     def __init__(self, data):
