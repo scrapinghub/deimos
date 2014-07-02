@@ -1,9 +1,17 @@
+import json
 from deimos._struct import _Struct
 
 
 class Launch(_Struct):
 
     def __init__(self, proto):
+        if (proto.task_info.command.value and
+            proto.task_info.command.value.startswith('{')):
+            # Hack by duendex. The command is in fact a serialized json
+            # containing the Docker image and the actual command to run.
+            params = json.loads(proto.task_info.command.value)
+            proto.task_info.command.value = params['command']
+            proto.task_info.command.container.image = params['image']
         underlying = LaunchProto(proto)
         self._underlying = underlying
         _Struct.__init__(self, executor_id=underlying.executor_id(),
