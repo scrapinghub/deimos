@@ -8,7 +8,7 @@ version = "deimos/VERSION"
 
 
 def sync_version():
-    code = "git describe --tags --exact-match 2>/dev/null"
+    code = "git describe --tags 2>/dev/null"
     try:
         v = subprocess.check_output(code, shell=True)
         with open(version, "w+") as h:
