@@ -9,9 +9,13 @@ class Launch(_Struct):
             proto.task_info.command.value.startswith('{')):
             # Hack by duendex. The command is in fact a serialized json
             # containing the Docker image and the actual command to run.
-            params = json.loads(proto.task_info.command.value)
-            proto.task_info.command.value = params['command']
-            proto.task_info.command.container.image = params['image']
+            command = proto.task_info.command
+            params = json.loads(command.value)
+            command.value = params['command']
+            command.container.image = params['image']
+            command.container.options.extend(params.get('options', []))
+            for k, v in params.get('envs', {}).iteritems():
+                command.environment.variables.add(name=k, value=v)
         underlying = LaunchProto(proto)
         self._underlying = underlying
         _Struct.__init__(self, executor_id=underlying.executor_id(),
