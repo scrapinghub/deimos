@@ -2,6 +2,7 @@ import inspect
 import logging
 import os
 import re
+import base64
 
 try:                  # Prefer system installation of Mesos protos if available
     from mesos_pb2 import *
@@ -144,25 +145,39 @@ def place_uris(launchy, directory, optimistic_unpack=False):
         gen_unpack_cmd = unpacker(uri) if optimistic_unpack else None
         log.info("Retrieving URI: %s", deimos.cmd.escape([uri]))
         try:
-            basename = uri.split("/")[-1]
-            f = os.path.join(directory, basename)
-            if basename == "":
+            parts = uri.rsplit("/", 1)
+            if len(parts) < 2:
                 raise IndexError
+            f = os.path.join(directory, parts[1])
         except IndexError:
             log.info("Not able to determine basename: %r", uri)
             continue
-        try:
-            cmd(fetcher_command(uri, f))
-        except subprocess.CalledProcessError as e:
-            log.warning("Failed while processing URI: %s",
-                        deimos.cmd.escape([uri]))
-            continue
-        if item.executable:
-            os.chmod(f, 0755)
-        if gen_unpack_cmd is not None:
-            log.info("Unpacking %s" % f)
-            cmd(gen_unpack_cmd(f, directory))
-            cmd(["rm", "-f", f])
+
+        if uri[0:4] == "data":
+            # We need to be careful as '/' may appear in the data itself.
+            extract_data(uri.rsplit("/", 1)[0], f)
+        else:
+            try:
+                cmd(fetcher_command(uri, f))
+            except subprocess.CalledProcessError as e:
+                log.warning("Failed while processing URI: %s",
+                            deimos.cmd.escape([uri]))
+                continue
+            if item.executable:
+                os.chmod(f, 0755)
+            if gen_unpack_cmd is not None:
+                log.info("Unpacking %s" % f)
+                cmd(gen_unpack_cmd(f, directory))
+                cmd(["rm", "-f", f])
+
+
+def extract_data(uri, target):
+    head, data = uri.split(',', 1)
+    # Assume MIME-type is application/json, charset is UTF-8
+    # and data is base64 encoded.
+    plaindata = base64.b64decode(data)
+    with open(target, 'wb') as f:
+        f.write(plaindata)
 
 
 def fetcher_command(uri, target):
