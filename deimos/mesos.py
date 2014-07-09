@@ -103,7 +103,10 @@ class LaunchProto(object):
     def argv(self):
         cmd = self.command()
         if cmd.HasField("value") and cmd.value != "":
-            return ["sh", "-c", cmd.value]
+            if cmd.value.startswith('["'):
+                return json.loads(cmd.value)
+            else:
+                return ["sh", "-c", cmd.value]
         return []
 
     def uris(self):
